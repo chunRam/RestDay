@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RestDay - Premium Prototype</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #F8F9FA; 
+            --surface-color: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #8E8E93;
+            --border-color: #E5E5EA;
+            --primary-action: #1C1C1E;
+            --primary-action-text: #FFFFFF;
+            --accent-color: #34C759;
+            --badge-bg: #F2F2F7;
+            --safe-area-bottom: 34px;
+            --safe-area-top: 44px;
+            --shadow-sm: 0 4px 12px rgba(0,0,0,0.04);
+            --shadow-md: 0 12px 32px rgba(0,0,0,0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #D1D1D6; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; 
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            max-height: 932px;
+            background-color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 431px) {
+            .app-container {
+                height: 90vh;
+                border-radius: 44px;
+                box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+                border: 12px solid #1C1C1E;
+            }
+        }
+
+        .view {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            display: flex; flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 10; visibility: hidden;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+        }
+
+        .view.active { transform: translateX(0); z-index: 20; visibility: visible; }
+        .view.exit-left {
+            transform: translateX(-25%); z-index: 10; visibility: visible;
+            filter: brightness(0.92);
+            transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.45s;
+        }
+
+        .view.modal {
+            transform: translateY(100%);
+            border-top-left-radius: 24px; border-top-right-radius: 24px;
+            z-index: 50; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+            height: 95%; top: auto; bottom: 0;
+        }
+        .view.modal.active { transform: translateY(0); }
+
+        .backdrop {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 40; opacity: 0; visibility: hidden;
+            transition: opacity 0.4s ease;
+        }
+        .backdrop.active { opacity: 1; visibility: visible; }
+
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: var(--safe-area-top) 20px 12px; background-color: transparent;
+            z-index: 100; position: relative;
+        }
+        .header.surface {
+            background-color: rgba(255,255,255,0.85);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-bottom: 0.5px solid var(--border-color);
+        }
+
+        .header-title { font-size: 17px; font-weight: 600; color: var(--text-primary); position: absolute; left: 50%; transform: translateX(-50%); }
+        .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+
+        .icon-btn, .back-btn {
+            background: none; border: none; color: var(--text-primary);
+            cursor: pointer; padding: 8px; display: flex; align-items: center;
+            position: relative; z-index: 2; transition: opacity 0.2s;
+        }
+        .icon-btn:active, .back-btn:active { opacity: 0.5; }
+        .back-btn { font-size: 17px; font-weight: 500; gap: 2px; color: var(--text-primary); margin-left: -8px;}
+
+        .content { flex: 1; overflow-y: auto; padding: 10px 24px 120px; }
+
+        .bottom-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 16px 24px var(--safe-area-bottom);
+            background: linear-gradient(to top, var(--bg-color) 70%, rgba(248,249,250,0));
+            z-index: 30; display: flex; flex-direction: column; gap: 12px;
+        }
+        .bottom-bar.surface {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid var(--border-color);
+        }
+
+        .btn-primary, .btn-secondary {
+            width: 100%; padding: 18px; border-radius: 20px; font-size: 17px; font-weight: 600;
+            border: none; cursor: pointer; transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .btn-primary { background-color: var(--primary-action); color: var(--primary-action-text); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .btn-primary:active { transform: scale(0.96); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-secondary { background-color: var(--badge-bg); color: var(--text-primary); }
+        .btn-secondary:active { transform: scale(0.96); background-color: #E5E5EA; }
+
+        .title-large { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.35; margin-bottom: 12px; letter-spacing: -0.5px; }
+        .text-body { font-size: 16px; color: var(--text-secondary); line-height: 1.6; letter-spacing: -0.2px; }
+
+        .hero { margin-top: 20px; margin-bottom: 40px; }
+        .badge {
+            display: inline-flex; align-items: center; padding: 6px 14px;
+            background-color: var(--surface-color); color: var(--text-primary);
+            border-radius: 12px; font-size: 14px; font-weight: 600; margin-bottom: 20px;
+            box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.02);
+        }
+        .d-day-title { font-size: 80px; font-weight: 700; color: var(--text-primary); line-height: 1; letter-spacing: -3px; margin-bottom: 12px; }
+        .holiday-date { font-size: 18px; color: var(--text-secondary); font-weight: 500; }
+        .holiday-date span { color: var(--text-primary); font-weight: 600; }
+        
+        .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+        
+        .question-card {
+            background-color: var(--surface-color); border-radius: 24px; padding: 28px 24px;
+            box-shadow: var(--shadow-md); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.03);
+        }
+        .question-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px;}
+
+        .option-list { display: flex; flex-direction: column; gap: 14px; margin-top: 32px; }
+        .option-item {
+            padding: 20px 24px; background-color: var(--surface-color); border: 2px solid transparent;
+            border-radius: 20px; font-size: 17px; font-weight: 600; color: var(--text-primary);
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+        .option-item:active { transform: scale(0.97); }
+        .option-item.selected { border-color: var(--primary-action); background-color: rgba(0,0,0,0.02); }
+        .option-emoji { font-size: 24px; background: var(--badge-bg); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+
+        .timeline { margin-top: 32px; position: relative; padding-left: 24px; }
+        .timeline::before { content: ''; position: absolute; left: 6px; top: 12px; bottom: 12px; width: 2px; background-color: var(--border-color); }
+        .timeline-item { position: relative; margin-bottom: 28px; }
+        .timeline-item::before { content: ''; position: absolute; left: -24px; top: 8px; width: 14px; height: 14px; border-radius: 50%; background-color: var(--surface-color); border: 3px solid var(--text-primary); }
+        .timeline-time { font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+        .timeline-content { font-size: 17px; font-weight: 600; color: var(--text-primary); background: var(--surface-color); padding: 18px; border-radius: 16px; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.02); }
+
+        .check-list { margin-top: 32px; }
+        .check-item {
+            display: flex; align-items: center; padding: 20px; background: var(--surface-color);
+            border-radius: 20px; margin-bottom: 14px; cursor: pointer;
+            box-shadow: var(--shadow-sm); transition: transform 0.2s, opacity 0.3s;
+        }
+        .check-item:active { transform: scale(0.97); }
+        .check-circle {
+            width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border-color);
+            margin-right: 16px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0;
+        }
+        .check-item.done { opacity: 0.6; }
+        .check-item.done .check-circle { background-color: var(--accent-color); border-color: var(--accent-color); transform: scale(1.1); }
+        .check-icon { opacity: 0; transform: scale(0.5); transition: all 0.3s; color: white; }
+        .check-item.done .check-icon { opacity: 1; transform: scale(1); }
+        .check-text { font-size: 17px; font-weight: 500; transition: color 0.3s; }
+        .check-item.done .check-text { text-decoration: line-through; color: var(--text-secondary); }
+        
+        .progress-container { margin-top: 24px; }
+        .progress-bar { height: 12px; background: var(--border-color); border-radius: 6px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 6px; }
+        
+        .modal-handle { width: 40px; height: 5px; background: #D1D1D6; border-radius: 3px; margin: 12px auto 20px; }
+        .star-rating { display: flex; justify-content: center; gap: 12px; margin: 32px 0; }
+        .star { font-size: 44px; color: var(--border-color); cursor: pointer; transition: color 0.2s, transform 0.2s; }
+        .star:active { transform: scale(0.8); }
+        .star.active { color: #FFCC00; }
+        .review-input { width: 100%; padding: 20px; border: 1.5px solid var(--border-color); border-radius: 20px; font-size: 16px; resize: none; outline: none; background: var(--surface-color); transition: border-color 0.2s; }
+        .review-input:focus { border-color: var(--text-primary); }
+
+        .date-input-wrapper { position: relative; margin-top: 32px; }
+        .date-input {
+            width: 100%; padding: 20px 24px; font-size: 18px; font-weight: 600;
+            border: 2px solid var(--border-color); border-radius: 20px; background: var(--surface-color);
+            outline: none; transition: border-color 0.2s; appearance: none; -webkit-appearance: none;
+        }
+        .date-input:focus { border-color: var(--primary-action); }
+    </style>
+</head>
+<body>
+
+    <div class="backdrop" id="backdrop" onclick="closeModal()"></div>
+
+    <div class="app-container" id="app">
+
+        <!-- ==============================================
+             1. HOME VIEW 
+        =============================================== -->
+        <div class="view active" id="view-home">
+            <div class="header">
+                <div class="logo">RestDay</div>
+                <button class="icon-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+            </div>
+            <div class="content">
+                <!-- State: No Plan -->
+                <div id="home-state-none" style="display: none; text-align: center; margin-top: 40px;">
+                    <div class="empty-icon">🗓️</div>
+                    <h1 class="title-large" style="margin-bottom: 8px;">일정 없음</h1>
+                    <p class="text-body" style="margin-bottom: 40px;">아직 등록된 휴일이 없습니다.<br>쉬는 날을 미리 등록하고 계획을 세워보세요.</p>
+                </div>
+
+                <!-- State: Ready -->
+                <div id="home-state-ready" style="display: block;">
+                    <div class="hero">
+                        <div class="badge">다음 휴일까지</div>
+                        <h1 class="d-day-title">D-3</h1>
+                        <p class="holiday-date">다가오는 휴일, <span>이번주 토요일</span></p>
+                    </div>
+                    <div class="question-card">
+                        <h3>휴일 계획을 세워보세요</h3>
+                        <p class="text-body">이번 휴일을 어떻게 보낼지 미리 결정해보세요.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-bar">
+                <button class="btn-primary" id="home-cta" onclick="nav('view-decision')">휴일 계획하기</button>
+                <div style="text-align: center; margin-top: 4px;">
+                    <button style="background:none; border:none; color:var(--text-secondary); font-size:13px; cursor:pointer; text-decoration: underline;" onclick="toggleHomeState()">화면 상태 전환 (테스트용)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================================
+             2. HOLIDAY REGISTER VIEW
+        =============================================== -->
+        <div class="view" id="view-register">
+            <div class="header surface">
+                <button class="back-btn" onclick="back()">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="header-title">휴일 등록</div>
+                <div style="width:44px"></div>
+            </div>
+            <div class="content">
+                <h2 class="title-large" style="margin-top: 24px;">휴일 날짜 선택</h2>
+                <p class="text-body">쉬는 날짜를 달력에서 선택해 주세요.</p>
+                <div class="date-input-wrapper">
+                    <input type="date" class="date-input" id="dateInput">
+                </div>
+            </div>
+            <div class="bottom-bar surface">
+                <button class="btn-primary" onclick="backAndSetState('ready')">저장하기</button>
+            </div>
+        </div>
+
+        <!-- ==============================================
+             3. DECISION VIEW 
+        =============================================== -->
+        <div class="view" id="view-decision">
+            <div class="header surface">
+                <button class="back-btn" onclick="back()">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="header-title">방향 설정</div>
+                <div style="width:44px"></div>
+            </div>
+            <div class="content">
+                <div class="badge" style="margin-top:20px;">단계 1/2</div>
+                <h2 class="title-large">이번 휴일의 주요 목표는<br>무엇인가요?</h2>
+                <p class="text-body">휴일에 가장 하고 싶은 활동의 방향을 선택해 주세요.</p>
+                
+                <div class="option-list">
+                    <div class="option-item" onclick="selectOption(this)">
+                        <div class="option-emoji">☕️</div>
+                        <span>집에서 푹 쉬기</span>
+                    </div>
+                    <div class="option-item" onclick="selectOption(this)">
+                        <div class="option-emoji">🍃</div>
+                        <span>가벼운 외출하기</span>
+                    </div>
+                    <div class="option-item" onclick="selectOption(this)">
+                        <div class="option-emoji">🧹</div>
+                        <span>밀린 집안일이나 업무 처리하기</span>
+                    </div>
+                    <div class="option-item" onclick="selectOption(this)">
+                        <div class="option-emoji">🎨</div>
+                        <span>취미 생활이나 자기계발하기</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-bar surface">
+                <button class="btn-primary" onclick="nav('view-plan')">다음</button>
+            </div>
+        </div>
+
+        <!-- ==============================================
+             4. PLAN PREVIEW VIEW 
+        =============================================== -->
+        <div class="view" id="view-plan">
+            <div class="header surface">
+                <button class="back-btn" onclick="back()">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="header-title">추천 계획</div>
+                <div style="width:44px"></div>
+            </div>
+            <div class="content">
+                <h2 class="title-large" style="margin-top: 20px;">추천 휴일 계획</h2>
+                <p class="text-body">선택하신 방향에 맞춘 추천 일정입니다.</p>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-time">오전</div>
+                        <div class="timeline-content">늦잠 자기 및 가벼운 아침 식사</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">오후</div>
+                        <div class="timeline-content">스마트폰 멀리하기 및 가벼운 동네 산책</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">저녁</div>
+                        <div class="timeline-content">저녁 식사 및 영화 감상</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-bar surface">
+                <button class="btn-primary" onclick="nav('view-execution')">계획 확정하기</button>
+                <button class="btn-secondary" onclick="alert('다른 추천 계획을 불러옵니다.')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.13 15.57a10 10 0 1 0 3.4-9.26L2.5 9"></path></svg>
+                    다른 추천 보기
+                </button>
+            </div>
+        </div>
+
+        <!-- ==============================================
+             5. EXECUTION VIEW
+        =============================================== -->
+        <div class="view" id="view-execution">
+            <div class="header surface">
+                <div style="width:44px"></div>
+                <div class="header-title">오늘의 휴일</div>
+                <button class="icon-btn" onclick="navToHome()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </button>
+            </div>
+            <div class="content">
+                <h2 class="title-large" style="margin-top: 20px;">오늘 하루의 계획을<br>달성해 보세요.</h2>
+                
+                <div class="progress-container">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span class="text-body" style="font-size:14px; font-weight:600; color:var(--text-primary)">진행률</span>
+                        <span class="text-body" style="font-size:14px; font-weight:600;" id="progressText">0/3</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <div class="check-list">
+                    <div class="check-item" onclick="toggleCheck(this)">
+                        <div class="check-circle">
+                            <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <div class="check-text">늦잠 자기 및 가벼운 아침 식사</div>
+                    </div>
+                    <div class="check-item" onclick="toggleCheck(this)">
+                        <div class="check-circle">
+                            <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <div class="check-text">스마트폰 멀리하기 및 가벼운 동네 산책</div>
+                    </div>
+                    <div class="check-item" onclick="toggleCheck(this)">
+                        <div class="check-circle">
+                            <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <div class="check-text">저녁 식사 및 영화 감상</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-bar surface">
+                <button class="btn-primary" id="finishBtn" onclick="confirmFinish()" style="opacity: 0.5; pointer-events: none;">일정 완료하기</button>
+            </div>
+        </div>
+
+        <!-- ==============================================
+             6. REVIEW VIEW (MODAL)
+        =============================================== -->
+        <div class="view modal" id="view-review">
+            <div class="modal-handle"></div>
+            <div class="content" style="padding-top: 0;">
+                <h2 class="title-large" style="text-align: center; margin-top: 20px;">휴일은 어떠셨나요?</h2>
+                
+                <div class="star-rating">
+                    <span class="star" onclick="rate(1)">★</span>
+                    <span class="star" onclick="rate(2)">★</span>
+                    <span class="star" onclick="rate(3)">★</span>
+                    <span class="star" onclick="rate(4)">★</span>
+                    <span class="star" onclick="rate(5)">★</span>
+                </div>
+
+                <h3 style="font-size: 17px; margin-bottom: 12px; font-weight: 600;">다음 휴일을 위해 간단한 회고를 남겨주세요.</h3>
+                <textarea class="review-input" rows="5" placeholder="예: 오후에 산책을 다녀온 것이 좋았다. 다음 휴일에도 야외 활동을 해야겠다."></textarea>
+            </div>
+            <div class="bottom-bar">
+                <button class="btn-primary" onclick="closeReviewModal()">저장하기</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        const viewHistory = ['view-home'];
+
+        function nav(targetId) {
+            const currentId = viewHistory[viewHistory.length - 1];
+            const currentView = document.getElementById(currentId);
+            const targetView = document.getElementById(targetId);
+
+            viewHistory.push(targetId);
+
+            currentView.classList.remove('active');
+            currentView.classList.add('exit-left');
+            
+            targetView.classList.remove('exit-left');
+            targetView.classList.add('active');
+        }
+
+        function back() {
+            if (viewHistory.length <= 1) return;
+            
+            const currentId = viewHistory.pop();
+            const prevId = viewHistory[viewHistory.length - 1];
+            
+            const currentView = document.getElementById(currentId);
+            const prevView = document.getElementById(prevId);
+
+            currentView.classList.remove('active');
+            setTimeout(() => { currentView.classList.remove('exit-left'); }, 450);
+
+            prevView.classList.remove('exit-left');
+            prevView.classList.add('active');
+        }
+
+        function navToHome() {
+            const currentId = viewHistory[viewHistory.length - 1];
+            if (currentId === 'view-home') return;
+
+            const currentView = document.getElementById(currentId);
+            const homeView = document.getElementById('view-home');
+
+            currentView.classList.remove('active');
+            setTimeout(() => { currentView.classList.remove('exit-left'); }, 450);
+
+            homeView.classList.remove('exit-left');
+            homeView.classList.add('active');
+            
+            viewHistory.length = 0;
+            viewHistory.push('view-home');
+        }
+
+        /* Micro-interactions: Selections & Checks */
+        function selectOption(el) {
+            const siblings = el.parentElement.children;
+            for(let i=0; i<siblings.length; i++) siblings[i].classList.remove('selected');
+            el.classList.add('selected');
+        }
+
+        function toggleCheck(el) {
+            el.classList.toggle('done');
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const items = document.querySelectorAll('.check-item');
+            const doneItems = document.querySelectorAll('.check-item.done');
+            const percent = (doneItems.length / items.length) * 100;
+            
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `${doneItems.length}/${items.length}`;
+
+            const finishBtn = document.getElementById('finishBtn');
+            if(doneItems.length > 0) {
+                finishBtn.style.opacity = '1';
+                finishBtn.style.pointerEvents = 'auto';
+            } else {
+                finishBtn.style.opacity = '0.5';
+                finishBtn.style.pointerEvents = 'none';
+            }
+        }
+
+        function confirmFinish() {
+            if(confirm("기록을 완료하시겠습니까?")) {
+                openReviewModal();
+            }
+        }
+
+        /* Modal Logic (Review View) */
+        function openReviewModal() {
+            document.getElementById('backdrop').classList.add('active');
+            document.getElementById('view-review').classList.add('active');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('backdrop').classList.remove('active');
+            document.getElementById('view-review').classList.remove('active');
+            // After closing modal, go to home
+            setTimeout(() => {
+                navToHome();
+                // Reset check list for demo
+                document.querySelectorAll('.check-item').forEach(el => el.classList.remove('done'));
+                updateProgress();
+                rate(0);
+                document.querySelector('.review-input').value = '';
+            }, 300);
+        }
+
+        function closeModal() {
+            document.getElementById('backdrop').classList.remove('active');
+            document.getElementById('view-review').classList.remove('active');
+        }
+
+        function rate(stars) {
+            const starEls = document.querySelectorAll('.star');
+            starEls.forEach((el, idx) => {
+                if (idx < stars) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
+
+        /* Demo State Toggles */
+        let isReadyState = true;
+        function toggleHomeState() {
+            isReadyState = !isReadyState;
+            if (isReadyState) {
+                document.getElementById('home-state-none').style.display = 'none';
+                document.getElementById('home-state-ready').style.display = 'block';
+                document.getElementById('home-cta').textContent = '휴일 계획하기';
+                document.getElementById('home-cta').setAttribute('onclick', "nav('view-decision')");
+            } else {
+                document.getElementById('home-state-none').style.display = 'block';
+                document.getElementById('home-state-ready').style.display = 'none';
+                document.getElementById('home-cta').textContent = '휴일 등록하기';
+                document.getElementById('home-cta').setAttribute('onclick', "nav('view-register')");
+            }
+        }
+
+        function backAndSetState(state) {
+            if (state === 'ready') {
+                isReadyState = false; 
+                toggleHomeState();
+            }
+            back();
+        }
+
+        // Initialize progress
+        updateProgress();
+    </script>
+</body>
+</html>

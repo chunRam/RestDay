@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestDay - Minimal HomeView</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #F8F9FA; /* 매우 연한 회색/흰색 톤 */
+            --surface-color: #FFFFFF;
+            --text-primary: #111111;
+            --text-secondary: #767676;
+            --border-color: #EAEAEA;
+            --primary-action: #000000; /* 명확한 대비를 위한 블랙 액션 버튼 */
+            --primary-action-text: #FFFFFF;
+            --badge-bg: #F0F0F0;
+            --safe-area-bottom: 34px; /* iOS 홈 인디케이터 여백 고려 */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #E5E5EA; /* 데스크톱에서 모바일 뷰를 감싸는 배경 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Mobile Container */
+        .app-container {
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            max-height: 932px;
+            background-color: var(--bg-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 431px) {
+            .app-container {
+                height: 90vh;
+                border-radius: 40px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 20px;
+            background-color: var(--bg-color);
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 20px 0;
+            overflow-y: auto;
+        }
+
+        /* Hero (D-Day & Info) */
+        .hero {
+            margin-top: 40px;
+            margin-bottom: 60px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background-color: var(--badge-bg);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .d-day-title {
+            font-size: 72px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.1;
+            letter-spacing: -2px;
+            margin-bottom: 12px;
+        }
+
+        .holiday-date {
+            font-size: 18px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .holiday-date span {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Question Section */
+        .question-section {
+            background-color: var(--surface-color);
+            border-radius: 20px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .question-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.4;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .question-desc {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Bottom CTA (Design for Thumbs) */
+        .bottom-action-area {
+            padding: 20px 20px calc(20px + var(--safe-area-bottom));
+            background-color: var(--bg-color);
+            margin-top: auto;
+        }
+
+        .cta-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            background-color: var(--primary-action);
+            color: var(--primary-action-text);
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s ease, opacity 0.2s ease;
+        }
+
+        .cta-btn:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        /* Prototype State Controls (For Demo only) */
+        .demo-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #FFFFFF;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #EAEAEA;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .demo-controls { display: none; }
+        }
+
+        .demo-controls-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #767676;
+            margin-bottom: 4px;
+        }
+
+        .demo-controls button {
+            background: #F4F4F5;
+            color: #111;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        .demo-controls button:hover {
+            background: #E5E5EA;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Prototype State Controls -->
+    <div class="demo-controls">
+        <div class="demo-controls-title">상태 미리보기 (PC 전용)</div>
+        <button onclick="setState('no-holiday')">1. 등록된 휴일 없음</button>
+        <button onclick="setState('has-holiday')">2. 휴일 있음, 계획 없음</button>
+        <button onclick="setState('has-plan')">3. 계획 있음, 휴일 전</button>
+        <button onclick="setState('d-day')">4. 휴일 당일</button>
+        <button onclick="setState('passed')">5. 휴일 지남, 회고 전</button>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">RestDay</div>
+            <button class="icon-btn" aria-label="설정">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="hero">
+                <div class="badge" id="badgeText">다음 휴일까지</div>
+                <h1 class="d-day-title" id="mainTitle">D-3</h1>
+                <p class="holiday-date" id="subInfo">다가오는 휴일, <span>이번주 토요일</span></p>
+            </div>
+
+            <div class="question-section" id="questionCard">
+                <h2 class="question-title" id="msgTitle">이번 휴일, 어떻게 보낼까요?</h2>
+                <p class="question-desc" id="msgDesc">미리 방향을 정해두면 더 만족스러운 하루를 보낼 수 있어요.</p>
+            </div>
+        </main>
+
+        <!-- Bottom Action -->
+        <div class="bottom-action-area">
+            <button class="cta-btn" id="mainCta">이번 휴일 준비하기</button>
+        </div>
+    </div>
+
+    <script>
+        const states = {
+            'no-holiday': {
+                badge: '휴일이 기다려지나요?',
+                title: 'No Plan',
+                subInfo: '아직 등록된 휴일이 없어요',
+                msgTitle: '언제 쉬고 싶나요?',
+                msgDesc: '나만의 휴일을 먼저 달력에 등록해 보세요.',
+                cta: '휴일 등록하기',
+                titleSize: '56px'
+            },
+            'has-holiday': {
+                badge: '다음 휴일까지',
+                title: 'D-3',
+                subInfo: '다가오는 휴일, <span>이번주 토요일</span>',
+                msgTitle: '이번 휴일, 어떻게 보낼까요?',
+                msgDesc: '미리 방향을 정해두면 더 만족스러운 하루를 보낼 수 있어요.',
+                cta: '이번 휴일 준비하기',
+                titleSize: '72px'
+            },
+            'has-plan': {
+                badge: '준비 완료!',
+                title: 'D-1',
+                subInfo: '내일은 <span>완전히 비워내는 날</span>',
+                msgTitle: '계획이 준비되어 있어요',
+                msgDesc: '내일 하루, 가볍게 체크하며 편안하게 보내봐요.',
+                cta: '계획 확인하기',
+                titleSize: '72px'
+            },
+            'd-day': {
+                badge: '드디어 오늘',
+                title: 'D-Day',
+                subInfo: '오늘은 <span>회복에 집중하는 날</span>',
+                msgTitle: '좋은 아침입니다!',
+                msgDesc: '오늘을 위해 준비한 계획들을 하나씩 실천해 볼까요?',
+                cta: '오늘 계획 체크하기',
+                titleSize: '64px'
+            },
+            'passed': {
+                badge: '휴일이 끝났어요',
+                title: 'D+1',
+                subInfo: '지난 휴일, <span>잘 보내셨나요?</span>',
+                msgTitle: '어제 하루는 어땠나요?',
+                msgDesc: '가볍게 만족도를 남겨주시면 다음 휴일을 더 잘 준비할 수 있어요.',
+                cta: '휴일 회고하기',
+                titleSize: '72px'
+            }
+        };
+
+        function setState(stateKey) {
+            const state = states[stateKey];
+            
+            document.getElementById('badgeText').textContent = state.badge;
+            
+            const titleEl = document.getElementById('mainTitle');
+            titleEl.textContent = state.title;
+            titleEl.style.fontSize = state.titleSize;
+            
+            document.getElementById('subInfo').innerHTML = state.subInfo;
+            document.getElementById('msgTitle').innerHTML = state.msgTitle;
+            document.getElementById('msgDesc').innerHTML = state.msgDesc;
+            document.getElementById('mainCta').textContent = state.cta;
+
+            // Simple subtle animation for content change
+            const elementsToAnimate = [titleEl, document.getElementById('subInfo'), document.getElementById('questionCard')];
+            elementsToAnimate.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(4px)';
+            });
+            
+            setTimeout(() => {
+                elementsToAnimate.forEach(el => {
+                    el.style.transition = 'all 0.3s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                });
+            }, 50);
+        }
+    </script>
+</body>
+</html>
