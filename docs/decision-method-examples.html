@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RestDay Decision UI Examples</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --ink: #1b1b1f;
+      --muted: #73737a;
+      --line: #e4e1da;
+      --action: #1f2a24;
+      --action-text: #ffffff;
+      --green: #3e7c59;
+      --coral: #d76f55;
+      --yellow: #d8a526;
+      --blue: #547aa5;
+      --soft-green: #ecf4ee;
+      --soft-coral: #fbefeb;
+      --soft-yellow: #fbf4dd;
+      --soft-blue: #eef3f8;
+      --shadow: 0 18px 48px rgba(26, 28, 32, 0.1);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-end;
+      padding: 10px 0 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .top p {
+      max-width: 430px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(300px, 390px) 1fr;
+      gap: 24px;
+      padding-top: 24px;
+      align-items: start;
+    }
+
+    .method-panel,
+    .preview-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .method-panel {
+      padding: 16px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .panel-title {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .method-list {
+      display: grid;
+      gap: 8px;
+      max-height: calc(100vh - 155px);
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .method-button {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: start;
+      text-align: left;
+      border: 1px solid transparent;
+      background: #f8f8f6;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+    }
+
+    .method-button:hover {
+      border-color: #cfcac0;
+    }
+
+    .method-button.active {
+      background: var(--action);
+      color: var(--action-text);
+    }
+
+    .method-number {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(62, 124, 89, 0.12);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .method-button.active .method-number {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+
+    .method-name {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .method-core {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .method-button.active .method-core {
+      color: rgba(255, 255, 255, 0.68);
+    }
+
+    .preview-panel {
+      min-height: 720px;
+      padding: 22px;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview-kicker {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .preview-title {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .fit-badge {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: var(--soft-green);
+      color: var(--green);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .preview-body {
+      display: grid;
+      grid-template-columns: minmax(270px, 360px) 1fr;
+      gap: 24px;
+      padding-top: 22px;
+      align-items: start;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 360px;
+      min-height: 620px;
+      margin: 0 auto;
+      border: 10px solid #202124;
+      border-radius: 36px;
+      background: #f8f9fa;
+      overflow: hidden;
+      box-shadow: 0 22px 50px rgba(20, 20, 20, 0.18);
+    }
+
+    .phone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid #e7e7ea;
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    .back {
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 50%;
+      background: #f1f1f1;
+      color: #333;
+      cursor: default;
+    }
+
+    .screen-title {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .phone-content {
+      padding: 20px 18px 100px;
+    }
+
+    .phone-badge {
+      display: inline-flex;
+      margin-bottom: 16px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid #ededed;
+      padding: 7px 11px;
+      color: #333;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .phone h3 {
+      margin: 0 0 8px;
+      font-size: 25px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .phone p {
+      margin: 0;
+      color: #73737a;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .demo-area {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .option,
+    .decision-card,
+    .mini-card,
+    .timeline-row,
+    .chip-box,
+    .compare-card {
+      background: #ffffff;
+      border: 1px solid #ededed;
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.04);
+    }
+
+    .option.selected,
+    .compare-card.selected {
+      border-color: #1f2a24;
+      background: #f1f5f2;
+    }
+
+    .option strong,
+    .decision-card strong,
+    .mini-card strong,
+    .compare-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .choice-big {
+      min-height: 124px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #dedbd4;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #202124;
+      padding: 14px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .choice-big.active {
+      background: var(--soft-coral);
+      border-color: var(--coral);
+      color: #803622;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      border: 1px solid #dedbd4;
+      background: #ffffff;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .chip.active {
+      background: var(--soft-blue);
+      border-color: var(--blue);
+      color: #294f79;
+    }
+
+    .slider-track {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      background: #e2dfd7;
+      margin: 18px 4px 12px;
+    }
+
+    .slider-fill {
+      width: 58%;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .slider-dot {
+      position: absolute;
+      left: 58%;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 6px solid var(--green);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: none;
+      border: 1px solid #dedbd4;
+      border-radius: 8px;
+      padding: 12px;
+      color: #202124;
+      background: #ffffff;
+    }
+
+    .bottom-action {
+      width: calc(100% - 36px);
+      margin: 10px 18px 18px;
+      border: 0;
+      border-radius: 16px;
+      background: #1f2a24;
+      color: #ffffff;
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .phone-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 620px;
+    }
+
+    .phone-spacer {
+      flex: 1;
+    }
+
+    .notes {
+      display: grid;
+      gap: 14px;
+    }
+
+    .note-block {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    .note-block:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .note-label {
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .note-main {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.45;
+      font-weight: 800;
+    }
+
+    .note-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .tone-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tone-tag {
+      border-radius: 999px;
+      background: #f4f2ed;
+      color: #3f3f43;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .time {
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    @media (max-width: 920px) {
+      .workspace,
+      .preview-body {
+        grid-template-columns: 1fr;
+      }
+
+      .method-panel {
+        position: static;
+      }
+
+      .method-list {
+        max-height: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .preview-panel {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 18px;
+      }
+
+      .top,
+      .preview-header {
+        display: block;
+      }
+
+      .top p,
+      .fit-badge {
+        margin-top: 14px;
+      }
+
+      .method-list {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-panel {
+        padding: 14px;
+      }
+
+      .phone {
+        border-width: 8px;
+        border-radius: 28px;
+      }
+
+      .split {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="top">
+      <div>
+        <p class="eyebrow">RestDay UI decision samples</p>
+        <h1>계획 전 질문 방식을 고르는 화면</h1>
+      </div>
+      <p>왼쪽에서 방식을 선택하면 오른쪽에 실제 사용자가 보게 될 예시가 바뀝니다. 목적은 구현 확정 전, 질문의 느낌을 빠르게 비교하는 것입니다.</p>
+    </section>
+
+    <section class="workspace">
+      <aside class="method-panel" aria-label="방식 목록">
+        <h2 class="panel-title">방식 목록</h2>
+        <div class="method-list" id="methodList"></div>
+      </aside>
+
+      <section class="preview-panel" aria-live="polite">
+        <div class="preview-header">
+          <div>
+            <p class="preview-kicker" id="previewKicker">방식 1</p>
+            <h2 class="preview-title" id="previewTitle">설문 리스트</h2>
+          </div>
+          <div class="fit-badge" id="fitBadge">가장 단순한 MVP</div>
+        </div>
+
+        <div class="preview-body">
+          <div class="phone" aria-label="모바일 화면 예시">
+            <div class="phone-shell">
+              <div class="phone-header">
+                <button class="back" aria-label="뒤로가기">‹</button>
+                <div class="screen-title" id="screenTitle">상태 체크</div>
+                <div style="width:34px"></div>
+              </div>
+              <div class="phone-content" id="phoneContent"></div>
+              <div class="phone-spacer"></div>
+              <button class="bottom-action" id="bottomAction">추천 계획 만들기</button>
+            </div>
+          </div>
+
+          <div class="notes">
+            <div class="note-block">
+              <p class="note-label">핵심</p>
+              <p class="note-main" id="noteCore"></p>
+            </div>
+            <div class="note-block">
+              <p class="note-label">잘 맞는 경우</p>
+              <ul class="note-list" id="noteFit"></ul>
+            </div>
+            <div class="note-block">
+              <p class="note-label">주의</p>
+              <ul class="note-list" id="noteRisk"></ul>
+            </div>
+            <div class="note-block">
+              <p class="note-label">느낌</p>
+              <div class="tone-tags" id="toneTags"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const methods = [
+      {
+        name: '설문 리스트',
+        core: '질문을 위에서 아래로 빠르게 답한다.',
+        badge: '가장 단순한 MVP',
+        action: '추천 계획 만들기',
+        fit: ['구현 속도가 중요할 때', '질문 수가 적을 때'],
+        risk: ['설문 느낌이 강함', '기본값이 있으면 대충 넘기기 쉬움'],
+        tones: ['명확함', '빠름', '건조함'],
+        html: `
+          <span class="phone-badge">계획 전 질문</span>
+          <h3>이번 휴일의 상태를<br>먼저 정리해볼게요.</h3>
+          <p>답변을 바탕으로 실행 가능한 하루 초안을 만듭니다.</p>
+          <div class="demo-area">
+            <div class="option selected"><strong>컨디션: 보통</strong><p>무리하지 않으면 괜찮아요</p></div>
+            <div class="option"><strong>원하는 느낌: 완전히 쉬기</strong><p>회복감이 남는 하루</p></div>
+            <div class="option"><strong>계획 강도: 적당히</strong><p>휴식과 행동을 반반</p></div>
+          </div>
+        `
+      },
+      {
+        name: '결정 카드',
+        core: '앱이 먼저 방향을 제안하고 사용자가 수정한다.',
+        badge: '추천 중심',
+        action: '이 방향으로 계획 보기',
+        fit: ['사용자가 선택 피로를 느낄 때', '앱의 판단감을 보여주고 싶을 때'],
+        risk: ['근거가 약하면 임의 추천처럼 보임'],
+        tones: ['도움받는 느낌', '짧음', '확신'],
+        html: `
+          <span class="phone-badge">추천 방향</span>
+          <h3>오늘은 회복 중심 휴일이<br>좋아 보여요.</h3>
+          <p>컨디션이 낮고, 신경 쓰이는 일이 적은 상태로 보여요.</p>
+          <div class="demo-area">
+            <div class="decision-card"><strong>회복 중심의 조용한 휴일</strong><p>오전은 천천히, 오후는 가벼운 산책, 저녁은 일찍 마무리</p></div>
+            <div class="split">
+              <div class="choice-big active">좋아요</div>
+              <div class="choice-big">조금 바꿀래요</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        name: '양자택일 흐름',
+        core: '두 선택지만 반복해 방향을 좁힌다.',
+        badge: '결정 부담 낮음',
+        action: '다음 질문',
+        fit: ['모바일에서 빠른 선택이 필요할 때', '질문을 대화처럼 만들고 싶을 때'],
+        risk: ['선택지가 거칠면 사용자의 상태가 누락됨'],
+        tones: ['쉽다', '게임 같다', '빠르다'],
+        html: `
+          <span class="phone-badge">1 / 4</span>
+          <h3>지금 더 가까운 쪽은<br>어느 쪽인가요?</h3>
+          <p>정답은 없어요. 오늘 더 필요한 쪽만 고르면 됩니다.</p>
+          <div class="demo-area split">
+            <div class="choice-big active">몸을 쉬게 하고 싶다</div>
+            <div class="choice-big">뭔가 해야 마음이 편하다</div>
+          </div>
+        `
+      },
+      {
+        name: '상태 체크 카드',
+        core: '컨디션, 시간, 부담을 한 카드에서 고른다.',
+        badge: '상황 요약',
+        action: '상태 반영하기',
+        fit: ['질문 수를 줄이고 싶을 때', '홈에서 바로 이어지는 화면일 때'],
+        risk: ['카드 안 정보가 많으면 답답해짐'],
+        tones: ['정리됨', '차분함', '실용적'],
+        html: `
+          <span class="phone-badge">오늘 상태</span>
+          <h3>계획 전에 세 가지만<br>확인할게요.</h3>
+          <p>현재 상태를 짧게 잡으면 계획이 과해지지 않습니다.</p>
+          <div class="demo-area">
+            <div class="chip-box"><strong>컨디션</strong><div class="chip-row"><span class="chip">낮음</span><span class="chip active">보통</span><span class="chip">좋음</span></div></div>
+            <div class="chip-box"><strong>시간 여유</strong><div class="chip-row"><span class="chip active">반나절</span><span class="chip">하루</span></div></div>
+            <div class="chip-box"><strong>마음 부담</strong><div class="chip-row"><span class="chip">적음</span><span class="chip active">조금 있음</span></div></div>
+          </div>
+        `
+      },
+      {
+        name: '시나리오 선택',
+        core: '실제 하루 장면을 보고 고른다.',
+        badge: '상상하기 쉬움',
+        action: '이 하루로 시작하기',
+        fit: ['카테고리보다 생활감이 중요할 때', '사용자가 결과를 먼저 보고 싶을 때'],
+        risk: ['시나리오가 많으면 다시 카테고리 앱처럼 보임'],
+        tones: ['구체적', '따뜻함', '선택 쉬움'],
+        html: `
+          <span class="phone-badge">하루 장면</span>
+          <h3>내일에 더 가까운 하루를<br>골라주세요.</h3>
+          <p>고른 장면을 기준으로 오전, 오후, 저녁 계획을 만듭니다.</p>
+          <div class="demo-area">
+            <div class="option selected"><strong>늦게 일어나 천천히 회복하는 날</strong><p>집, 산책, 일찍 마무리</p></div>
+            <div class="option"><strong>밀린 일 하나만 끝내는 날</strong><p>짧은 집중, 정리, 보상</p></div>
+          </div>
+        `
+      },
+      {
+        name: '추천 먼저 보여주기',
+        core: '초안을 먼저 보여주고 강도만 조절한다.',
+        badge: '초안 우선',
+        action: '이 계획 사용하기',
+        fit: ['사용자가 빨리 결과를 보고 싶을 때', 'AI 추천을 전면에 둘 때'],
+        risk: ['처음 추천이 빗나가면 신뢰가 떨어짐'],
+        tones: ['즉시성', '편함', '수정 중심'],
+        html: `
+          <span class="phone-badge">초안</span>
+          <h3>일단 이렇게 보내면<br>무리 없을 것 같아요.</h3>
+          <p>원하면 바로 더 가볍게 조정할 수 있습니다.</p>
+          <div class="demo-area">
+            <div class="timeline-row"><span class="time">오전</span><p>천천히 일어나 식사하기</p></div>
+            <div class="timeline-row"><span class="time">오후</span><p>집 근처에서 30분 걷기</p></div>
+            <div class="chip-row"><span class="chip active">더 가볍게</span><span class="chip">알차게</span><span class="chip">다시 추천</span></div>
+          </div>
+        `
+      },
+      {
+        name: '우선순위 칩',
+        core: '원하는 키워드를 조합한다.',
+        badge: '조합형',
+        action: '키워드로 계획 만들기',
+        fit: ['사용자가 여러 의도를 동시에 가질 때', '선택지를 자주 바꿀 예정일 때'],
+        risk: ['칩이 많아지면 산만해짐'],
+        tones: ['유연함', '가벼움', '빠른 조합'],
+        html: `
+          <span class="phone-badge">우선순위</span>
+          <h3>이번 휴일에 남기고 싶은<br>느낌을 골라주세요.</h3>
+          <p>여러 개를 골라도 됩니다.</p>
+          <div class="demo-area">
+            <div class="chip-row">
+              <span class="chip active">회복</span><span class="chip">외출</span><span class="chip active">정리</span>
+              <span class="chip">약속</span><span class="chip active">혼자</span><span class="chip">돈 적게</span>
+              <span class="chip">성취감</span><span class="chip">늦잠</span>
+            </div>
+          </div>
+        `
+      },
+      {
+        name: '감정 기반 선택',
+        core: '현재 감정에서 휴일 방향을 찾는다.',
+        badge: '공감 중심',
+        action: '감정 반영하기',
+        fit: ['사용자가 상태를 말로 정리하기 어려울 때', '회복형 제품 톤을 원할 때'],
+        risk: ['감정 표현이 과하면 부담스러움'],
+        tones: ['공감', '부드러움', '개인적'],
+        html: `
+          <span class="phone-badge">지금 기분</span>
+          <h3>오늘 마음에 가까운 말을<br>골라주세요.</h3>
+          <p>이 감정을 기준으로 휴일의 무게를 조절합니다.</p>
+          <div class="demo-area">
+            <div class="option selected"><strong>지쳤다</strong><p>해야 할 일을 줄이고 회복을 우선합니다.</p></div>
+            <div class="option"><strong>찝찝하다</strong><p>밀린 것 하나를 작게 처리합니다.</p></div>
+            <div class="option"><strong>답답하다</strong><p>장소를 바꾸는 계획을 넣습니다.</p></div>
+          </div>
+        `
+      },
+      {
+        name: '계획 강도 슬라이더',
+        core: '휴식과 활동의 비율을 한 번에 조절한다.',
+        badge: '강도 조절',
+        action: '이 강도로 보기',
+        fit: ['계획 밀도가 핵심 변수일 때', '추천 재생성을 쉽게 만들 때'],
+        risk: ['슬라이더만으로는 의도가 부족함'],
+        tones: ['직관적', '조절감', '간결함'],
+        html: `
+          <span class="phone-badge">계획 강도</span>
+          <h3>내일은 어느 정도로<br>채우고 싶나요?</h3>
+          <p>강도를 바꾸면 오전, 오후, 저녁 계획 밀도가 달라집니다.</p>
+          <div class="demo-area">
+            <div class="slider-track"><div class="slider-fill"></div><div class="slider-dot"></div></div>
+            <div class="split"><p>가볍게</p><p style="text-align:right">알차게</p></div>
+            <div class="mini-card"><strong>현재: 적당히</strong><p>휴식과 행동을 반반으로 둡니다.</p></div>
+          </div>
+        `
+      },
+      {
+        name: '하루 미리보기 편집',
+        core: '오전, 오후, 저녁 초안을 바로 고친다.',
+        badge: '편집 중심',
+        action: '수정한 계획 확정',
+        fit: ['사용자가 결과 통제감을 원할 때', '계획 품질을 바로 높이고 싶을 때'],
+        risk: ['처음부터 편집이 많으면 무거워짐'],
+        tones: ['실행 가능', '구체적', '통제감'],
+        html: `
+          <span class="phone-badge">미리보기</span>
+          <h3>이 하루에서 바꾸고 싶은<br>부분만 고쳐주세요.</h3>
+          <p>빈칸을 누르면 다른 제안을 볼 수 있습니다.</p>
+          <div class="demo-area">
+            <div class="timeline-row"><span class="time">오전</span><p>늦잠 후 가벼운 식사</p></div>
+            <div class="timeline-row"><span class="time">오후</span><p>밀린 빨래 1회만 처리</p></div>
+            <div class="timeline-row"><span class="time">저녁</span><p>내일 준비 10분</p></div>
+          </div>
+        `
+      },
+      {
+        name: '대화형 질문',
+        core: '한 번에 하나씩 묻고 다음 질문을 바꾼다.',
+        badge: '대화형',
+        action: '답하기',
+        fit: ['상담받는 느낌을 만들 때', '답변에 따라 질문을 줄이고 싶을 때'],
+        risk: ['단계가 길면 답답함'],
+        tones: ['개인화', '차분함', '집중'],
+        html: `
+          <span class="phone-badge">질문 2</span>
+          <h3>쉬고 싶다는 느낌이<br>더 큰가요?</h3>
+          <p>방금 컨디션을 낮음으로 골랐어요. 그래서 계획을 줄일지 확인합니다.</p>
+          <div class="demo-area">
+            <div class="split">
+              <div class="choice-big active">네, 최대한 가볍게</div>
+              <div class="choice-big">그래도 하나는 하고 싶어요</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        name: '목표 한 문장 완성',
+        core: '휴일의 목적을 한 문장으로 만든다.',
+        badge: '방향 선언',
+        action: '문장으로 계획 만들기',
+        fit: ['의사결정감을 강하게 주고 싶을 때', '사용자 언어를 계획에 반영할 때'],
+        risk: ['입력 부담이 생길 수 있음'],
+        tones: ['명료함', '개인적', '결정감'],
+        html: `
+          <span class="phone-badge">한 문장</span>
+          <h3>이번 휴일은 어떤 날로<br>남기고 싶나요?</h3>
+          <p>문장을 완성하면 계획의 기준이 됩니다.</p>
+          <div class="demo-area">
+            <textarea class="textarea" readonly>이번 휴일은 밀린 일을 하나만 덜고, 나머지는 쉬는 날로 만들고 싶어요.</textarea>
+          </div>
+        `
+      },
+      {
+        name: '피하고 싶은 것 선택',
+        core: '원하지 않는 방향을 먼저 제거한다.',
+        badge: '제외 기준',
+        action: '피할 것 반영하기',
+        fit: ['사용자가 원하는 것보다 싫은 것이 분명할 때', '과한 계획을 막고 싶을 때'],
+        risk: ['부정형 질문이 많으면 무거워짐'],
+        tones: ['현실적', '부담 낮음', '안전함'],
+        html: `
+          <span class="phone-badge">피할 것</span>
+          <h3>내일 피하고 싶은 것을<br>먼저 골라주세요.</h3>
+          <p>선택한 항목은 계획에서 줄입니다.</p>
+          <div class="demo-area">
+            <div class="chip-row">
+              <span class="chip active">무리한 일정</span><span class="chip">돈 많이 쓰기</span>
+              <span class="chip active">집에만 있기</span><span class="chip">긴 이동</span>
+              <span class="chip">새로운 약속</span>
+            </div>
+          </div>
+        `
+      },
+      {
+        name: '시간 예산 선택',
+        core: '사용 가능한 시간에서 계획을 만든다.',
+        badge: '시간 기준',
+        action: '가능한 시간으로 보기',
+        fit: ['휴일 일부만 비어 있을 때', '실행 가능성이 중요할 때'],
+        risk: ['감정이나 목표가 약하게 반영될 수 있음'],
+        tones: ['현실적', '정확함', '실행 중심'],
+        html: `
+          <span class="phone-badge">시간 여유</span>
+          <h3>실제로 비어 있는 시간은<br>어느 정도인가요?</h3>
+          <p>남는 시간 안에서만 계획을 잡습니다.</p>
+          <div class="demo-area">
+            <div class="option"><strong>오전만 가능</strong><p>짧은 정리나 회복 중심</p></div>
+            <div class="option selected"><strong>반나절 가능</strong><p>핵심 활동 하나와 휴식</p></div>
+            <div class="option"><strong>하루 가능</strong><p>오전, 오후, 저녁으로 구성</p></div>
+          </div>
+        `
+      },
+      {
+        name: '확정 전 비교 카드',
+        core: '2~3개 방향을 비교하고 고른다.',
+        badge: '비교 선택',
+        action: '선택한 방향으로 계획 보기',
+        fit: ['추천 후보를 보여주고 싶을 때', '사용자가 결정 근거를 보고 싶을 때'],
+        risk: ['후보가 많으면 선택 피로가 커짐'],
+        tones: ['납득감', '선택권', '정돈됨'],
+        html: `
+          <span class="phone-badge">방향 후보</span>
+          <h3>내일은 이 세 방향 중<br>하나가 좋아 보여요.</h3>
+          <p>가장 마음이 편한 방향을 고르면 됩니다.</p>
+          <div class="demo-area">
+            <div class="compare-card selected"><strong>회복형</strong><p>일정을 줄이고 쉬는 감각을 남김</p></div>
+            <div class="compare-card"><strong>정리형</strong><p>밀린 일 하나만 끝내고 마무리</p></div>
+            <div class="compare-card"><strong>외출형</strong><p>가까운 곳에서 기분 전환</p></div>
+          </div>
+        `
+      }
+    ];
+
+    const methodList = document.querySelector('#methodList');
+    const previewKicker = document.querySelector('#previewKicker');
+    const previewTitle = document.querySelector('#previewTitle');
+    const fitBadge = document.querySelector('#fitBadge');
+    const screenTitle = document.querySelector('#screenTitle');
+    const phoneContent = document.querySelector('#phoneContent');
+    const bottomAction = document.querySelector('#bottomAction');
+    const noteCore = document.querySelector('#noteCore');
+    const noteFit = document.querySelector('#noteFit');
+    const noteRisk = document.querySelector('#noteRisk');
+    const toneTags = document.querySelector('#toneTags');
+
+    function renderList(activeIndex) {
+      methodList.innerHTML = methods.map((method, index) => `
+        <button class="method-button ${index === activeIndex ? 'active' : ''}" data-index="${index}" type="button">
+          <span class="method-number">${index + 1}</span>
+          <span>
+            <span class="method-name">${method.name}</span>
+            <span class="method-core">${method.core}</span>
+          </span>
+        </button>
+      `).join('');
+    }
+
+    function renderNotes(list, items) {
+      list.innerHTML = items.map((item) => `<li>${item}</li>`).join('');
+    }
+
+    function renderMethod(index) {
+      const method = methods[index];
+      previewKicker.textContent = `방식 ${index + 1}`;
+      previewTitle.textContent = method.name;
+      fitBadge.textContent = method.badge;
+      screenTitle.textContent = method.name;
+      phoneContent.innerHTML = method.html;
+      bottomAction.textContent = method.action;
+      noteCore.textContent = method.core;
+      renderNotes(noteFit, method.fit);
+      renderNotes(noteRisk, method.risk);
+      toneTags.innerHTML = method.tones.map((tone) => `<span class="tone-tag">${tone}</span>`).join('');
+      renderList(index);
+    }
+
+    methodList.addEventListener('click', (event) => {
+      const button = event.target.closest('.method-button');
+      if (!button) return;
+      renderMethod(Number(button.dataset.index));
+    });
+
+    renderMethod(0);
+  </script>
+</body>
+</html>

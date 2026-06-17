@@ -2,14 +2,17 @@
   "expo": {
     "name": "0611-Frontend",
     "slug": "0611-Frontend",
+    "scheme": "restday",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.restdady.app",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.restdady.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +23,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-web-browser",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "휴일 후보를 찾기 위해 캘린더 일정을 읽습니다.",
+          "remindersPermission": "휴일 준비 알림을 확인하기 위해 리마인더 접근 권한을 사용합니다."
+        }
+      ]
+    ]
   }
 }

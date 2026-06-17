@@ -160,6 +160,19 @@ RestDay의 기본 흐름은 다음과 같다.
 
 초기 버전은 브라우저의 `localStorage`를 사용할 수 있다. Firebase, 외부 캘린더, AI API는 핵심 흐름이 검증된 뒤 확장 후보로 둔다.
 
+### Gemini 추천 연동
+
+Firebase Blaze 업그레이드 없이 기능을 배포하기 위해 Gemini 호출은 Vercel Function 프록시를 거친다.
+
+Expo의 `EXPO_PUBLIC_` 환경변수는 앱 번들에 포함되므로, 클라이언트에는 프록시 URL만 넣고 Gemini API 키는 Vercel 환경변수 `GEMINI_API_KEY`로만 보관한다.
+
+프록시 호출이 실패하면 앱은 기존 규칙 기반 추천으로 돌아간다.
+
+선택 환경변수:
+
+- `EXPO_PUBLIC_GEMINI_PROXY_URL`: Vercel Gemini 추천 프록시 URL
+- `EXPO_PUBLIC_GEMINI_MODEL`: 사용할 Gemini 모델. 기본값은 `gemini-3.1-flash-lite`
+
 ---
 
 ## 9. AI 구현 지침

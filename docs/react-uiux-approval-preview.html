@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RestDay React UI/UX Approval Preview</title>
+  <style>
+    :root {
+      --bg: #f6f5f1;
+      --surface: #ffffff;
+      --surface-2: #f1f4ef;
+      --ink: #1a1c1a;
+      --muted: #71746f;
+      --line: #dedbd1;
+      --green: #386f52;
+      --blue: #496f9e;
+      --coral: #c96a50;
+      --yellow: #c69326;
+      --dark: #202820;
+      --dark-text: #ffffff;
+      --shadow: 0 18px 44px rgba(27, 31, 28, 0.1);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      align-items: end;
+      padding: 10px 0 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .hero-text {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      padding-top: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary {
+      position: sticky;
+      top: 18px;
+      padding: 18px;
+    }
+
+    .summary h2,
+    .preview h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .summary-block {
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .summary-block:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .summary ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      background: #f2f0ea;
+      color: #343832;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pill.strong {
+      background: var(--dark);
+      color: var(--dark-text);
+    }
+
+    .preview {
+      padding: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--ink);
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: var(--dark);
+      color: var(--dark-text);
+      border-color: var(--dark);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(280px, 390px) 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 390px;
+      min-height: 690px;
+      border: 10px solid #202124;
+      border-radius: 34px;
+      background: #f8f9fa;
+      overflow: hidden;
+      box-shadow: 0 24px 54px rgba(0, 0, 0, 0.18);
+    }
+
+    .phone-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 18px 12px;
+      background: rgba(255, 255, 255, 0.88);
+      border-bottom: 1px solid #e7e7ea;
+    }
+
+    .back {
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 50%;
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .screen-title {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .phone-body {
+      min-height: 574px;
+      padding: 20px 18px;
+    }
+
+    .phone-bottom {
+      padding: 14px 18px 18px;
+      background: rgba(255, 255, 255, 0.9);
+      border-top: 1px solid #e7e7ea;
+    }
+
+    .primary {
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      background: #202820;
+      color: #ffffff;
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .secondary {
+      width: 100%;
+      margin-top: 10px;
+      border: 1px solid #d9d7cf;
+      border-radius: 16px;
+      background: #ffffff;
+      color: #202820;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .badge {
+      display: inline-flex;
+      margin-bottom: 16px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid #ebebe8;
+      padding: 7px 11px;
+      color: #343832;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .phone h3 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .phone p {
+      margin: 0;
+      color: #73766f;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e9e7e0;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.04);
+    }
+
+    .card.selected {
+      border-color: var(--green);
+      background: #edf5ef;
+    }
+
+    .card.warning {
+      border-color: #edcf8f;
+      background: #fbf4df;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .d-day {
+      margin: 10px 0 8px;
+      font-size: 68px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      border: 1px solid #d9d6ce;
+      background: #ffffff;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chip.active {
+      border-color: var(--green);
+      background: #e8f3ec;
+      color: #2f6649;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .choice {
+      min-height: 92px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #dedbd4;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .choice.active {
+      border-color: var(--coral);
+      background: #fbefeb;
+      color: #803622;
+    }
+
+    .plan-row {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .time {
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .mini-action {
+      display: flex;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .mini-action span {
+      border-radius: 999px;
+      background: #f1f0ea;
+      padding: 6px 9px;
+      color: #4b4d49;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .side-note {
+      display: grid;
+      gap: 16px;
+    }
+
+    .side-card {
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    .side-card:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .side-card h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .side-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .mark {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e8f3ec;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .impact {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfaf7;
+    }
+
+    .impact strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .impact span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @media (max-width: 940px) {
+      .hero,
+      .layout,
+      .stage {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        position: static;
+      }
+
+      .phone {
+        margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        padding: 18px;
+      }
+
+      .preview {
+        padding: 14px;
+      }
+
+      .phone {
+        border-width: 8px;
+        border-radius: 28px;
+      }
+
+      .split,
+      .impact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">React 반영 전 컨펌용 시안</p>
+        <h1>설문 화면을 결정 흐름으로 바꾸는 안</h1>
+      </div>
+      <p class="hero-text">
+        이 파일은 실제 React 코드에 반영하기 전, 사용자가 방향을 승인할 수 있도록 만든 정적 미리보기입니다.
+        핵심은 질문지를 줄이고, 결정 카드와 계획 미리보기로 판단을 쉽게 만드는 것입니다.
+      </p>
+    </section>
+
+    <section class="layout">
+      <aside class="panel summary">
+        <h2>제안 요약</h2>
+
+        <div class="summary-block">
+          <p class="label">바꾸는 이유</p>
+          <ul>
+            <li>현재 화면은 설문 작성 느낌이 강함</li>
+            <li>선택 결과가 계획에 어떻게 반영되는지 약함</li>
+            <li>기본 선택값 때문에 대충 넘기기 쉬움</li>
+          </ul>
+        </div>
+
+        <div class="summary-block">
+          <p class="label">새 방향</p>
+          <div class="pill-row">
+            <span class="pill strong">결정 카드</span>
+            <span class="pill">상태 체크</span>
+            <span class="pill">칩 선택</span>
+            <span class="pill">계획 미리보기</span>
+          </div>
+        </div>
+
+        <div class="summary-block">
+          <p class="label">반영 범위</p>
+          <ul>
+            <li>HomeView CTA 문구 조정</li>
+            <li>DecisionView 구조 개편</li>
+            <li>PlanPreviewView 편집감 강화</li>
+            <li>Store 구조는 최대한 유지</li>
+          </ul>
+        </div>
+      </aside>
+
+      <section class="panel preview">
+        <h2>화면 미리보기</h2>
+        <div class="tabs" role="tablist" aria-label="미리보기 화면 선택">
+          <button class="tab active" type="button" data-screen="home">1. Home</button>
+          <button class="tab" type="button" data-screen="decision">2. Decision</button>
+          <button class="tab" type="button" data-screen="plan">3. Plan Preview</button>
+          <button class="tab" type="button" data-screen="approval">판단 기준</button>
+        </div>
+
+        <div class="stage">
+          <div class="phone" aria-label="모바일 미리보기">
+            <div class="phone-head">
+              <button class="back" type="button">‹</button>
+              <div class="screen-title" id="phoneTitle">Home</div>
+              <div style="width:34px"></div>
+            </div>
+
+            <div class="phone-body">
+              <section class="screen active" id="screen-home">
+                <span class="badge">준비 중인 휴일</span>
+                <div class="d-day">D-3</div>
+                <p><strong>연차</strong> 2026-06-20</p>
+
+                <div class="stack">
+                  <div class="card selected">
+                    <strong>이번 휴일 방향을 먼저 정해요</strong>
+                    <p>컨디션과 마음 부담을 보고, 무리 없는 하루 방향을 잡습니다.</p>
+                  </div>
+                  <div class="card">
+                    <strong>현재 상태</strong>
+                    <p>아직 계획 없음. 휴일 전 결정이 필요합니다.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="screen" id="screen-decision">
+                <span class="badge">추천 방향</span>
+                <h3>이번 휴일은 회복을 중심에 두고,<br>작은 정리 하나만 넣어볼까요?</h3>
+                <p>휴식과 실행 사이에서 부담을 낮춘 방향입니다.</p>
+
+                <div class="stack">
+                  <div class="card selected">
+                    <strong>회복 + 최소 정리</strong>
+                    <p>오전은 천천히, 오후에 하나만 처리, 저녁은 일찍 마무리</p>
+                    <div class="chip-row">
+                      <span class="chip active">회복</span>
+                      <span class="chip active">가볍게</span>
+                      <span class="chip">혼자</span>
+                    </div>
+                  </div>
+
+                  <div class="card">
+                    <strong>상태 체크</strong>
+                    <div class="chip-row">
+                      <span class="chip active">컨디션 보통</span>
+                      <span class="chip active">부담 조금 있음</span>
+                      <span class="chip">반나절 여유</span>
+                    </div>
+                  </div>
+
+                  <div class="split">
+                    <div class="choice active">이 방향 좋아요</div>
+                    <div class="choice">더 알차게</div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="screen" id="screen-plan">
+                <span class="badge">하루 미리보기</span>
+                <h3>이 정도면 무리 없이<br>실행할 수 있어요.</h3>
+                <p>각 시간대는 확정 전 가볍게 바꿀 수 있습니다.</p>
+
+                <div class="stack">
+                  <div class="card plan-row">
+                    <span class="time">오전</span>
+                    <div>
+                      <strong>알람 없이 일어나 가벼운 식사</strong>
+                      <p>회복감을 먼저 만듭니다.</p>
+                      <div class="mini-action"><span>유지</span><span>바꾸기</span></div>
+                    </div>
+                  </div>
+                  <div class="card plan-row warning">
+                    <span class="time">오후</span>
+                    <div>
+                      <strong>밀린 일 하나만 30분 처리</strong>
+                      <p>끝내기보다 시작 기준으로 잡습니다.</p>
+                      <div class="mini-action"><span>더 가볍게</span><span>바꾸기</span></div>
+                    </div>
+                  </div>
+                  <div class="card plan-row">
+                    <span class="time">저녁</span>
+                    <div>
+                      <strong>내일 준비 10분 후 쉬기</strong>
+                      <p>휴일을 늦게까지 끌지 않습니다.</p>
+                      <div class="mini-action"><span>유지</span><span>바꾸기</span></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="screen" id="screen-approval">
+                <span class="badge">컨펌 기준</span>
+                <h3>이 방향을 승인할지<br>아래 기준으로 판단하세요.</h3>
+                <div class="stack">
+                  <div class="card selected">
+                    <strong>승인하면 좋은 경우</strong>
+                    <p>RestDay를 설문 앱보다 휴일 결정 도구로 보이게 만들고 싶을 때</p>
+                  </div>
+                  <div class="card">
+                    <strong>보류하면 좋은 경우</strong>
+                    <p>현재처럼 단순 질문 리스트가 더 명확하다고 판단될 때</p>
+                  </div>
+                  <div class="card warning">
+                    <strong>구현 전 확인</strong>
+                    <p>카드별 수정 기능을 실제 편집까지 구현할지, 추천 재생성 버튼으로 제한할지 결정 필요</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="phone-bottom">
+              <button class="primary" type="button" id="primaryAction">이번 휴일 방향 정하기</button>
+              <button class="secondary" type="button" id="secondaryAction">기존 계획 보기</button>
+            </div>
+          </div>
+
+          <div class="side-note">
+            <div class="side-card">
+              <p class="label">화면 의도</p>
+              <h3 id="intentTitle">홈은 다음 행동 하나만 보여줍니다.</h3>
+              <p id="intentBody">사용자가 기능 목록이 아니라, 다가오는 휴일 기준으로 지금 해야 할 행동을 바로 이해하게 합니다.</p>
+            </div>
+
+            <div class="side-card">
+              <p class="label">사용자에게 주는 느낌</p>
+              <div class="checklist" id="feelingList"></div>
+            </div>
+
+            <div class="side-card">
+              <p class="label">구현 영향</p>
+              <div class="impact-grid">
+                <div class="impact">
+                  <strong>데이터</strong>
+                  <span>기존 답변 구조를 최대한 유지</span>
+                </div>
+                <div class="impact">
+                  <strong>화면</strong>
+                  <span>DecisionView 중심 변경</span>
+                </div>
+                <div class="impact">
+                  <strong>위험</strong>
+                  <span>편집 기능 범위가 커질 수 있음</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const screens = {
+      home: {
+        title: 'Home',
+        primary: '이번 휴일 방향 정하기',
+        secondary: '기존 계획 보기',
+        intentTitle: '홈은 다음 행동 하나만 보여줍니다.',
+        intentBody: '사용자가 기능 목록이 아니라, 다가오는 휴일 기준으로 지금 해야 할 행동을 바로 이해하게 합니다.',
+        feelings: ['휴일 준비 상태가 선명함', 'CTA가 설문이 아니라 결정으로 느껴짐', '기존 HomeView 방향과 충돌하지 않음']
+      },
+      decision: {
+        title: 'Decision',
+        primary: '이 방향으로 계획 보기',
+        secondary: '다른 방향 보기',
+        intentTitle: '질문지는 줄이고, 결정 카드를 먼저 보여줍니다.',
+        intentBody: '앱이 먼저 방향을 제안하고 사용자는 수락하거나 조정합니다. 설문 작성 부담을 낮추는 구조입니다.',
+        feelings: ['앱이 도와준다는 인상이 강함', '기본값을 대충 누르는 문제를 줄임', '상태와 의도가 계획으로 이어지는 느낌이 생김']
+      },
+      plan: {
+        title: 'Plan Preview',
+        primary: '이 계획 확정하기',
+        secondary: '답변 다시 조정하기',
+        intentTitle: '계획은 결과물이 아니라 조정 가능한 초안입니다.',
+        intentBody: '오전, 오후, 저녁 계획을 보고 필요한 부분만 바꾸게 합니다. 사용자가 최종 계획을 통제한다고 느낍니다.',
+        feelings: ['추천 결과를 더 신뢰하기 쉬움', '실행 가능성을 직접 판단할 수 있음', '확정 전 이탈을 줄일 수 있음']
+      },
+      approval: {
+        title: 'Approval',
+        primary: '이 방향 승인',
+        secondary: '보류하고 다시 검토',
+        intentTitle: '승인 기준은 명확합니다.',
+        intentBody: 'RestDay를 질문지 앱이 아니라 휴일 의사결정 도구로 보이게 만들고 싶다면 이 방향이 맞습니다.',
+        feelings: ['DecisionView 개편 효과가 가장 큼', 'PlanPreview 편집 범위는 별도 결정 필요', 'React 반영 전 사용자 컨펌에 적합함']
+      }
+    };
+
+    const tabs = document.querySelectorAll('.tab');
+    const screenEls = document.querySelectorAll('.screen');
+    const phoneTitle = document.querySelector('#phoneTitle');
+    const primaryAction = document.querySelector('#primaryAction');
+    const secondaryAction = document.querySelector('#secondaryAction');
+    const intentTitle = document.querySelector('#intentTitle');
+    const intentBody = document.querySelector('#intentBody');
+    const feelingList = document.querySelector('#feelingList');
+
+    function renderFeelings(items) {
+      feelingList.innerHTML = items.map((item) => `
+        <div class="check">
+          <span class="mark">✓</span>
+          <span>${item}</span>
+        </div>
+      `).join('');
+    }
+
+    function setScreen(name) {
+      tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.screen === name));
+      screenEls.forEach((screen) => screen.classList.toggle('active', screen.id === `screen-${name}`));
+
+      const data = screens[name];
+      phoneTitle.textContent = data.title;
+      primaryAction.textContent = data.primary;
+      secondaryAction.textContent = data.secondary;
+      intentTitle.textContent = data.intentTitle;
+      intentBody.textContent = data.intentBody;
+      renderFeelings(data.feelings);
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => setScreen(tab.dataset.screen));
+    });
+
+    setScreen('home');
+  </script>
+</body>
+</html>
