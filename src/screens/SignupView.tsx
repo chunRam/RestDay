@@ -14,12 +14,14 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { colors, shadows } from '../theme/theme';
 import { useAuthStore } from '../store/useAuthStore';
+import { useGoogleCalendarAuth } from '../hooks/useGoogleCalendarAuth';
 
 type AuthMode = 'signup' | 'login';
 
 export default function SignupView() {
   const navigation = useNavigation<any>();
   const { signupWithEmail, loginWithEmail, authActionLoading } = useAuthStore();
+  useGoogleCalendarAuth({ includeCalendarScope: false });
   const [mode, setMode] = useState<AuthMode>('signup');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');

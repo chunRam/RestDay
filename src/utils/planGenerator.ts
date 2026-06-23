@@ -1,9 +1,16 @@
+import type { CalendarContext, Holiday } from '../store/useAppStore';
+
 export interface PlanItem {
   id: string;
   timeSlot: string;
   text: string;
   isDone: boolean;
 }
+
+export type RecommendationSource =
+  | 'gemini'
+  | 'rule_based'
+  | 'gemini_retry_then_rule_based';
 
 export type EnergyLevel = 'low' | 'normal' | 'high';
 export type DesiredMood = 'rest' | 'organize' | 'outside' | 'achieve';
@@ -22,9 +29,20 @@ export interface PlanRecommendation {
   direction: string;
   reason: string;
   plans: PlanItem[];
+  source: RecommendationSource;
+  model: string;
+  failureReason: string | null;
+  httpStatus: number | null;
+  retryCount: number;
 }
 
-export type PlanRecommendationBundle = Record<PlanIntensity, PlanRecommendation>;
+export interface RecommendationMetadata {
+  source: RecommendationSource;
+  model?: string | null;
+  failureReason?: string | null;
+  httpStatus?: number | null;
+  retryCount?: number;
+}
 
 type PlanSlot = 'morning' | 'afternoon' | 'evening';
 
@@ -65,6 +83,27 @@ const planSlotLabels: Record<PlanSlot, string> = {
   afternoon: '오후',
   evening: '저녁',
 };
+
+const DEFAULT_RECOMMENDATION_MODEL = 'rule-based';
+
+function getFailureReasonLabel(failureReason: string | null) {
+  switch (failureReason) {
+    case 'gemini_proxy_not_configured':
+      return 'AI 추천 연결이 설정되지 않았어요';
+    case 'invalid_gemini_proxy_protocol':
+    case 'invalid_gemini_proxy_url':
+      return 'AI 추천 연결 주소가 올바르지 않아요';
+    case 'invalid_gemini_response_shape':
+      return 'AI 추천 응답 형식이 올바르지 않았어요';
+    case 'gemini_request_error':
+      return 'AI 추천 요청 중 네트워크 오류가 발생했어요';
+    default:
+      if (failureReason?.startsWith('gemini_http_')) {
+        return `AI 추천 서버 응답 오류 (${failureReason.replace('gemini_http_', '')})`;
+      }
+      return null;
+  }
+}
 
 function getPlanSlotFromHour(hour: number): PlanSlot {
   if (hour < 12) return 'morning';
@@ -155,6 +194,128 @@ function formatMustDoForReason(parsedMustDo: ParsedMustDo) {
     : parsedMustDo.task;
 }
 
+function formatLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function getEventDateKey(start: string, isAllDay: boolean) {
+  if (isAllDay) {
+    return start.slice(0, 10);
+  }
+
+  const date = new Date(start);
+  if (Number.isNaN(date.getTime())) {
+    return start.slice(0, 10);
+  }
+
+  return formatLocalDateKey(date);
+}
+
+function getRelevantHolidayEvents(
+  holiday: Holiday | null,
+  calendarContext: CalendarContext | null
+) {
+  if (!holiday || !calendarContext) return [];
+
+  return calendarContext.upcomingEvents.filter(
+    (event) => getEventDateKey(event.start, event.isAllDay) === holiday.startDate
+  );
+}
+
+function getEventSlotRange(start: string, end: string | null) {
+  const startDate = new Date(start);
+  if (Number.isNaN(startDate.getTime())) return [] as PlanSlot[];
+
+  const endDate = end ? new Date(end) : null;
+  const slots: PlanSlot[] = [];
+  const startHour = startDate.getHours();
+  const endHour = endDate && !Number.isNaN(endDate.getTime()) ? endDate.getHours() : startHour;
+  const slotOrder: PlanSlot[] = ['morning', 'afternoon', 'evening'];
+  const startSlot = getPlanSlotFromHour(startHour);
+  const endSlot = getPlanSlotFromHour(endHour);
+  const startIndex = slotOrder.indexOf(startSlot);
+  const endIndex = slotOrder.indexOf(endSlot);
+
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    slots.push(slotOrder[index]);
+  }
+
+  return slots;
+}
+
+function getBusySlots(events: CalendarContext['upcomingEvents']) {
+  const busySlots = new Set<PlanSlot>();
+
+  events.forEach((event) => {
+    if (event.isAllDay) return;
+
+    getEventSlotRange(event.start, event.end).forEach((slot) => busySlots.add(slot));
+  });
+
+  return busySlots;
+}
+
+function buildCalendarReason(holiday: Holiday | null, calendarContext: CalendarContext | null) {
+  const holidayEvents = getRelevantHolidayEvents(holiday, calendarContext);
+  if (holidayEvents.length === 0) return null;
+
+  const busySlots = Array.from(getBusySlots(holidayEvents)).map((slot) => planSlotLabels[slot]);
+  const titles = holidayEvents.slice(0, 2).map((event) => event.title).join(', ');
+
+  if (busySlots.length === 0) {
+    return `${titles} 일정이 있어 전체 흐름을 무리하지 않게 잡았습니다.`;
+  }
+
+  return `${titles} 일정이 있어 ${busySlots.join(', ')} 시간대 전후는 여유를 두었습니다.`;
+}
+
+function applyCalendarContextToPlans(
+  plans: PlanItem[],
+  holiday: Holiday | null,
+  calendarContext: CalendarContext | null,
+  parsedMustDo: ParsedMustDo | null
+) {
+  const holidayEvents = getRelevantHolidayEvents(holiday, calendarContext);
+  if (holidayEvents.length === 0) return plans;
+
+  const slotTitles = new Map<PlanSlot, string>();
+  holidayEvents.forEach((event) => {
+    if (event.isAllDay) return;
+
+    getEventSlotRange(event.start, event.end).forEach((slot) => {
+      if (!slotTitles.has(slot)) {
+        slotTitles.set(slot, event.title);
+      }
+    });
+  });
+
+  return plans.map((plan, index) => {
+    const slot = (['morning', 'afternoon', 'evening'][index] ?? plan.id) as PlanSlot;
+    const eventTitle = slotTitles.get(slot);
+
+    if (!eventTitle) {
+      return plan;
+    }
+
+    const bufferText = `${eventTitle} 일정 전후로 30분 여유를 두고`;
+    if (parsedMustDo?.slot === slot) {
+      return {
+        ...plan,
+        text: `${plan.text} (${eventTitle} 일정 전후 30분은 비워두기)`,
+      };
+    }
+
+    return {
+      ...plan,
+      text: `${bufferText} ${plan.text}`,
+    };
+  });
+}
+
 function getScheduledMustDoPlan(parsedMustDo: ParsedMustDo, intensity: PlanIntensity) {
   const timedTask = `${parsedMustDo.timeLabel}에 ${parsedMustDo.task}`;
 
@@ -171,31 +332,50 @@ function getScheduledMustDoPlan(parsedMustDo: ParsedMustDo, intensity: PlanInten
 
 function getDirection(answers: DecisionAnswers) {
   if (answers.energy === 'low') {
-    return answers.desiredMood === 'organize'
-      ? '부담을 줄인 최소 정리 휴일'
-      : '회복 중심의 조용한 휴일';
+    if (answers.desiredMood === 'organize') {
+      if (answers.intensity === 'light') return '최소한만 정리하고 쉬는 휴일';
+      if (answers.intensity === 'full') return '컨디션 안에서 밀린 것을 정리하는 휴일';
+      return '부담을 줄인 최소 정리 휴일';
+    }
+    if (answers.intensity === 'light') return '아무것도 안 해도 괜찮은 완전 회복 휴일';
+    if (answers.intensity === 'full') return '조용하지만 리듬을 되찾는 회복 휴일';
+    return '회복 중심의 조용한 휴일';
   }
 
   if (answers.desiredMood === 'outside') {
-    return answers.socialMode === 'together'
-      ? '가볍게 밖에서 기분을 바꾸는 휴일'
-      : '혼자 리듬을 되찾는 외출 휴일';
+    if (answers.socialMode === 'together') {
+      if (answers.intensity === 'light') return '부담 없이 잠깐 밖에서 만나는 휴일';
+      if (answers.intensity === 'full') return '함께 여러 곳을 돌아보는 알찬 외출 휴일';
+      return '가볍게 밖에서 기분을 바꾸는 휴일';
+    }
+    if (answers.intensity === 'light') return '동네 한 바퀴만 돌고 오는 가벼운 외출 휴일';
+    if (answers.intensity === 'full') return '혼자 새로운 장소를 탐험하는 외출 휴일';
+    return '혼자 리듬을 되찾는 외출 휴일';
   }
 
   if (answers.desiredMood === 'achieve') {
-    return answers.intensity === 'full'
-      ? '성취감을 남기는 집중 휴일'
-      : '하나만 확실히 끝내는 휴일';
+    if (answers.intensity === 'light') return '하나만 가볍게 끝내는 휴일';
+    if (answers.intensity === 'full') return '성취감을 남기는 집중 휴일';
+    return '하나만 확실히 끝내는 휴일';
   }
 
   if (answers.desiredMood === 'organize') {
+    if (answers.intensity === 'light') return '딱 하나만 정리하고 마는 휴일';
+    if (answers.intensity === 'full') return '밀린 것을 확실히 덜어내는 정리 휴일';
     return '밀린 것을 가볍게 덜어내는 휴일';
   }
 
+  // rest
+  if (answers.intensity === 'light') return '완전히 비우고 쉬는 휴일';
+  if (answers.intensity === 'full') return '여유 속에서 작은 충전까지 챙기는 휴일';
   return '회복과 여유를 남기는 휴일';
 }
 
-function buildReason(answers: DecisionAnswers) {
+function buildReason(
+  answers: DecisionAnswers,
+  holiday: Holiday | null,
+  calendarContext: CalendarContext | null
+) {
   const parsedMustDo = parseMustDo(answers.mustDo);
   const parts = [
     energyLabels[answers.energy],
@@ -205,93 +385,157 @@ function buildReason(answers: DecisionAnswers) {
   ];
 
   if (parsedMustDo) {
-    return `${parts.join(', ')}를 바탕으로, ${formatMustDoForReason(parsedMustDo)} 일정은 고정했습니다.`;
+    const calendarReason = buildCalendarReason(holiday, calendarContext);
+    return [
+      `${parts.join(', ')}를 바탕으로, ${formatMustDoForReason(parsedMustDo)} 일정은 고정했습니다.`,
+      calendarReason,
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
 
-  return `${parts.join(', ')}를 반영했습니다.`;
+  const calendarReason = buildCalendarReason(holiday, calendarContext);
+  return [`${parts.join(', ')}를 반영했습니다.`, calendarReason].filter(Boolean).join(' ');
 }
 
 function getMorningPlan(answers: DecisionAnswers) {
   const parsedMustDo = parseMustDo(answers.mustDo);
+  const { intensity } = answers;
 
   if (answers.energy === 'low') {
+    if (intensity === 'light') return '알람 없이 원하는 만큼 자고 일어나기';
+    if (intensity === 'full') return '알람 없이 일어나 물 한 잔, 가벼운 스트레칭 후 아침 먹기';
     return '알람 없이 일어나 물 한 잔 마시고 가벼운 아침 먹기';
   }
 
   if (answers.desiredMood === 'achieve' || answers.desiredMood === 'organize') {
-    return parsedMustDo
-      ? `꼭 해야 하는 일부터 30분만 시작하기: ${parsedMustDo.task}`
-      : '오늘 끝내고 싶은 일 하나를 정하고 30분만 시작하기';
+    if (parsedMustDo) {
+      if (intensity === 'light') return `할 일을 눈으로 확인만 해두기: ${parsedMustDo.task}`;
+      if (intensity === 'full') return `꼭 해야 하는 일을 바로 시작해 오전 중에 절반 끝내기: ${parsedMustDo.task}`;
+      return `꼭 해야 하는 일부터 30분만 시작하기: ${parsedMustDo.task}`;
+    }
+    if (intensity === 'light') return '오늘 할 일을 하나만 정하고 메모해두기';
+    if (intensity === 'full') return '할 일 목록을 정리하고 가장 중요한 것부터 바로 시작하기';
+    return '오늘 끝내고 싶은 일 하나를 정하고 30분만 시작하기';
   }
 
   if (answers.desiredMood === 'outside') {
+    if (intensity === 'light') return '서두르지 않고 나갈 준비만 천천히 하기';
+    if (intensity === 'full') return '가고 싶은 장소와 동선을 정하고 일찍 출발하기';
     return '외출 준비를 서두르지 않고 동선 하나만 정하기';
   }
 
+  // rest
+  if (intensity === 'light') return '알람 없이 일어나 아무것도 안 하고 천천히 시작하기';
+  if (intensity === 'full') return '평소보다 30분 일찍 일어나 좋아하는 아침 루틴 즐기기';
   return '늦지 않게 일어나 가벼운 식사와 환기로 하루 열기';
 }
 
 function getAfternoonPlan(answers: DecisionAnswers) {
   const parsedMustDo = parseMustDo(answers.mustDo);
+  const { intensity } = answers;
 
   if (answers.desiredMood === 'outside') {
-    return answers.socialMode === 'together'
-      ? '무리 없는 장소에서 2시간 정도 함께 보내기'
-      : '집 근처 공원이나 카페에 들러 기분 전환하기';
+    if (answers.socialMode === 'together') {
+      if (intensity === 'light') return '가까운 카페에서 1시간 정도 가볍게 만나기';
+      if (intensity === 'full') return '함께 2~3곳을 돌며 반나절 코스로 보내기';
+      return '무리 없는 장소에서 2시간 정도 함께 보내기';
+    }
+    if (intensity === 'light') return '집 근처 편의점이나 공원까지만 가볍게 다녀오기';
+    if (intensity === 'full') return '안 가본 카페나 서점을 찾아 2시간 정도 머물기';
+    return '집 근처 공원이나 카페에 들러 기분 전환하기';
   }
 
   if (answers.desiredMood === 'organize') {
-    return parsedMustDo
-      ? `꼭 해야 하는 일 마무리하거나 다음 단계 정하기: ${parsedMustDo.task}`
-      : '방 한 곳이나 할 일 한 묶음만 정해서 정리하기';
+    if (parsedMustDo) {
+      if (intensity === 'light') return `할 일 중 가장 작은 것 하나만 처리하기: ${parsedMustDo.task}`;
+      if (intensity === 'full') return `꼭 해야 하는 일을 끝까지 마무리하기: ${parsedMustDo.task}`;
+      return `꼭 해야 하는 일 마무리하거나 다음 단계 정하기: ${parsedMustDo.task}`;
+    }
+    if (intensity === 'light') return '서랍 하나 또는 앱 알림 정리처럼 5분짜리 일 하나만 하기';
+    if (intensity === 'full') return '방 한 곳을 완전히 정리하고 불필요한 것 정리하기';
+    return '방 한 곳이나 할 일 한 묶음만 정해서 정리하기';
   }
 
   if (answers.desiredMood === 'achieve') {
     if (parsedMustDo) {
-      return answers.intensity === 'full'
-        ? `꼭 해야 하는 일에 집중 블록 2개 쓰기: ${parsedMustDo.task}`
-        : `꼭 해야 하는 일 하나를 60분 동안 처리하기: ${parsedMustDo.task}`;
+      if (intensity === 'light') return `꼭 해야 하는 일을 30분만 집중해서 진행하기: ${parsedMustDo.task}`;
+      if (intensity === 'full') return `꼭 해야 하는 일에 집중 블록 2개(총 90분) 쓰기: ${parsedMustDo.task}`;
+      return `꼭 해야 하는 일 하나를 60분 동안 처리하기: ${parsedMustDo.task}`;
     }
-
-    return answers.intensity === 'full'
-      ? '집중 블록 2개로 핵심 작업을 진행하기'
-      : '가장 중요한 일 하나를 60분 동안 처리하기';
+    if (intensity === 'light') return '가장 중요한 일 하나를 30분만 집중해서 진행하기';
+    if (intensity === 'full') return '집중 블록 2개(총 90분)로 핵심 작업을 진행하기';
+    return '가장 중요한 일 하나를 60분 동안 처리하기';
   }
 
-  return answers.energy === 'low'
-    ? '휴대폰을 잠시 내려두고 20분 산책하거나 누워서 쉬기'
-    : '가벼운 취미나 산책으로 쉬는 느낌을 분명히 만들기';
+  // rest
+  if (answers.energy === 'low') {
+    if (intensity === 'light') return '침대나 소파에서 아무것도 안 하고 쉬기';
+    if (intensity === 'full') return '20분 산책 후 좋아하는 음료 한 잔 사 오기';
+    return '휴대폰을 잠시 내려두고 20분 산책하거나 누워서 쉬기';
+  }
+  if (intensity === 'light') return '좋아하는 음악이나 영상을 틀어두고 편하게 쉬기';
+  if (intensity === 'full') return '취미 활동이나 산책을 1시간 이상 넉넉하게 즐기기';
+  return '가벼운 취미나 산책으로 쉬는 느낌을 분명히 만들기';
 }
 
 function getEveningPlan(answers: DecisionAnswers) {
   const parsedMustDo = parseMustDo(answers.mustDo);
+  const { intensity } = answers;
 
   if (parsedMustDo && !parsedMustDo.timeLabel && answers.desiredMood === 'rest') {
+    if (intensity === 'light') return `할 일은 내일로 미루고 오늘은 쉬기`;
+    if (intensity === 'full') return `꼭 해야 하는 일을 처리하고 여유 있게 저녁 마무리: ${parsedMustDo.task}`;
     return `꼭 해야 하는 일만 짧게 처리하고 쉬기: ${parsedMustDo.task}`;
   }
 
-  if (answers.intensity === 'full' && answers.energy === 'high') {
-    return '오늘 한 일을 정리하고 내일 준비를 15분만 해두기';
-  }
-
   if (answers.desiredMood === 'organize') {
+    if (intensity === 'light') return '정리는 여기까지만 하고 편하게 저녁 먹기';
+    if (intensity === 'full') return '정리 결과를 확인하고 내일 할 일 목록까지 정리해두기';
     return '정리한 공간이나 결과를 확인하고 편하게 저녁 먹기';
   }
 
   if (answers.desiredMood === 'outside') {
+    if (intensity === 'light') return '일찍 귀가해서 샤워하고 바로 쉬기';
+    if (intensity === 'full') return '귀가 후 오늘 다녀온 곳 사진 정리하고 여유 있게 마무리';
     return '귀가 후 샤워하고 내일을 방해하지 않는 시간에 쉬기';
   }
 
+  if (answers.desiredMood === 'achieve') {
+    if (intensity === 'light') return '더 하고 싶어도 여기서 멈추고 편하게 저녁 보내기';
+    if (intensity === 'full') return '오늘 한 일을 정리하고 내일 준비를 15분만 해두기';
+    return '해낸 것을 확인하고 따뜻한 저녁으로 보상하기';
+  }
+
+  // rest
+  if (intensity === 'light') return '아무 계획 없이 하고 싶은 대로 저녁 보내기';
+  if (intensity === 'full') return '따뜻한 저녁을 차려 먹고 내일 루틴을 간단히 준비해두기';
   return '따뜻한 저녁을 먹고 화면 사용을 줄이며 일찍 마무리하기';
 }
 
-export function generateRecommendationFromAnswers(answers: DecisionAnswers): PlanRecommendation {
+export function generateRecommendationFromAnswers(
+  answers: DecisionAnswers,
+  holiday: Holiday | null = null,
+  calendarContext: CalendarContext | null = null
+): PlanRecommendation {
+  return generateRecommendationFromAnswersWithMetadata(answers, {
+    source: 'rule_based',
+  }, holiday, calendarContext);
+}
+
+export function generateRecommendationFromAnswersWithMetadata(
+  answers: DecisionAnswers,
+  metadata: RecommendationMetadata,
+  holiday: Holiday | null = null,
+  calendarContext: CalendarContext | null = null
+): PlanRecommendation {
   const parsedMustDo = parseMustDo(answers.mustDo);
-  const plans: PlanItem[] = [
+  const basePlans: PlanItem[] = [
     { id: 'morning', timeSlot: '오전', text: getMorningPlan(answers), isDone: false },
     { id: 'afternoon', timeSlot: '오후', text: getAfternoonPlan(answers), isDone: false },
     { id: 'evening', timeSlot: '저녁', text: getEveningPlan(answers), isDone: false },
   ];
+  const plans = [...basePlans];
 
   if (parsedMustDo?.timeLabel && parsedMustDo.slot) {
     const planIndex = parsedMustDo.slot === 'morning' ? 0 : parsedMustDo.slot === 'afternoon' ? 1 : 2;
@@ -303,28 +547,60 @@ export function generateRecommendationFromAnswers(answers: DecisionAnswers): Pla
     };
   }
 
+  const adjustedPlans = applyCalendarContextToPlans(plans, holiday, calendarContext, parsedMustDo);
+
   return {
     direction: getDirection(answers),
-    reason: buildReason(answers),
-    plans,
+    reason: buildReason(answers, holiday, calendarContext),
+    plans: adjustedPlans,
+    source: metadata.source,
+    model: metadata.model?.trim() || DEFAULT_RECOMMENDATION_MODEL,
+    failureReason: metadata.failureReason ?? null,
+    httpStatus: metadata.httpStatus ?? null,
+    retryCount: metadata.retryCount ?? 0,
   };
 }
 
-export function generateRecommendationBundleFromAnswers(
-  answers: DecisionAnswers
-): PlanRecommendationBundle {
-  return {
-    light: generateRecommendationFromAnswers({ ...answers, intensity: 'light' }),
-    balanced: generateRecommendationFromAnswers({ ...answers, intensity: 'balanced' }),
-    full: generateRecommendationFromAnswers({ ...answers, intensity: 'full' }),
-  };
-}
-
-export function generateAdjustedRecommendation(
-  answers: DecisionAnswers,
-  intensity: PlanIntensity
+export function normalizeRecommendationMetadata(
+  recommendation: PlanRecommendation
 ): PlanRecommendation {
-  return generateRecommendationFromAnswers({ ...answers, intensity });
+  return {
+    ...recommendation,
+    source: recommendation.source ?? 'rule_based',
+    model: recommendation.model?.trim() || DEFAULT_RECOMMENDATION_MODEL,
+    failureReason: recommendation.failureReason ?? null,
+    httpStatus: recommendation.httpStatus ?? null,
+    retryCount: typeof recommendation.retryCount === 'number' ? recommendation.retryCount : 0,
+  };
+}
+
+export function getRecommendationSourceLabel(source: RecommendationSource) {
+  switch (source) {
+    case 'gemini':
+      return 'AI 추천';
+    case 'gemini_retry_then_rule_based':
+      return 'AI 실패 후 기본 추천';
+    case 'rule_based':
+    default:
+      return '기본 추천';
+  }
+}
+
+export function getRecommendationSourceDescription(recommendation: PlanRecommendation | null) {
+  if (!recommendation) return null;
+
+  if (recommendation.source === 'gemini') {
+    return `Gemini 모델 ${recommendation.model}로 생성된 추천이에요.`;
+  }
+
+  if (recommendation.source === 'gemini_retry_then_rule_based') {
+    return 'AI 추천이 직전 계획과 충분히 다르게 생성되지 않아 기본 추천으로 대체했어요.';
+  }
+
+  const failureLabel = getFailureReasonLabel(recommendation.failureReason);
+  return failureLabel
+    ? `${failureLabel}. 기본 추천을 사용 중이에요.`
+    : 'AI 추천을 만들지 못해 기본 추천을 사용 중이에요.';
 }
 
 export function generatePlansFromDecision(goalType: string): PlanItem[] {

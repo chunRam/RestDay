@@ -31,7 +31,10 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -39,4 +42,28 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Vercel
 .vercel
+
+# Firebase
+.firebase/
+.firebaserc
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# AI Agent config (개인 설정)
+.claude/
+.agents/
+AGENTS.md
+
+# 프로젝트 무관 임시 파일
+random_events.ics
+test-uri.ts
+
+# package-lock (의존성 정확한 재현은 npm ci 로)
+# package-lock.json 은 포함시킴

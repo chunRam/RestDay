@@ -1,4 +1,4 @@
-const defaultModel = 'gemini-3.1-flash-lite';
+const defaultModel = 'gemini-1.5-flash';
 const retryableStatuses = new Set([429, 500, 503]);
 const retryDelaysMs = [350, 900];
 

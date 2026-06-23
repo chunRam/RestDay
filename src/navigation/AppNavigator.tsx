@@ -4,8 +4,11 @@ import { View, ActivityIndicator } from 'react-native';
 import HomeView from '../screens/HomeView';
 import RegisterView from '../screens/RegisterView';
 import DecisionView from '../screens/DecisionView';
-import PlanPreviewView from '../screens/PlanPreviewView';
 import ExecutionView from '../screens/ExecutionView';
+import PlanPreviewView from '../screens/PlanPreviewView';
+import ReviewView from '../screens/ReviewView';
+import HistoryView from '../screens/HistoryView';
+import HistoryDetailView from '../screens/HistoryDetailView';
 import SettingsView from '../screens/SettingsView';
 import LoginView from '../screens/LoginView';
 import SignupView from '../screens/SignupView';
@@ -47,6 +50,9 @@ export default function AppNavigator() {
           <Stack.Screen name="Decision" component={DecisionView} />
           <Stack.Screen name="PlanPreview" component={PlanPreviewView} />
           <Stack.Screen name="Execution" component={ExecutionView} />
+          <Stack.Screen name="Review" component={ReviewView} />
+          <Stack.Screen name="History" component={HistoryView} />
+          <Stack.Screen name="HistoryDetail" component={HistoryDetailView} />
           <Stack.Screen name="Settings" component={SettingsView} />
           <Stack.Screen name="DevLogs" component={DevLogsView} />
         </>

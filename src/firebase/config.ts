@@ -2,14 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// TODO: 파이어베이스 콘솔에서 발급받은 실제 웹 설정(Config) 값으로 교체하세요.
 const firebaseConfig = {
-  apiKey: "AIzaSyA-G9sV_hsonXlc2O3v3_AshsPne9sPCFM",
-  authDomain: "restdady.firebaseapp.com",
-  projectId: "restdady",
-  storageBucket: "restdady.firebasestorage.app",
-  messagingSenderId: "650997922253",
-  appId: "1:650997922253:web:42d20978d714994bc36c84"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '',
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? '',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? '',
 };
 
 export const app = initializeApp(firebaseConfig);

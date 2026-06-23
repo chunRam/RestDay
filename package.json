@@ -31,7 +31,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "deploy": "rm -rf dist && npx expo export && npx firebase deploy --only hosting"
+    "deploy:check": "node ./scripts/verify-firebase-deploy-config.js",
+    "deploy": "npm run deploy:check && rm -rf dist && npx expo export --platform web --output-dir dist && npx firebase deploy --only hosting:app,hosting:legacy --project restdady"
   },
   "private": true
 }

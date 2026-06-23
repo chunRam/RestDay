@@ -53,9 +53,27 @@ const INTENSITY_OPTIONS: Choice<PlanIntensity>[] = [
   { id: 'full', label: '알차게', description: '계획 밀도를 조금 높게' },
 ];
 
+function formatCalendarEventPreview(start: string, isAllDay: boolean, title: string) {
+  if (isAllDay) {
+    return `${start.slice(5, 10).replace('-', '/')} 종일 · ${title}`;
+  }
+
+  const date = new Date(start);
+  if (Number.isNaN(date.getTime())) {
+    return `${title}`;
+  }
+
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} · ${title}`;
+}
+
 export default function DecisionView() {
   const navigation = useNavigation<any>();
-  const { currentHoliday, setDecisionAndGeneratePlans, decisionAnswers: savedAnswers } = useAppStore();
+  const {
+    currentHoliday,
+    calendarContext,
+    setDecisionAndGeneratePlans,
+    decisionAnswers: savedAnswers,
+  } = useAppStore();
   const [energy, setEnergy] = useState<EnergyLevel>(savedAnswers?.energy ?? 'normal');
   const [desiredMood, setDesiredMood] = useState<DesiredMood>(savedAnswers?.desiredMood ?? 'rest');
   const [socialMode, setSocialMode] = useState<SocialMode>(savedAnswers?.socialMode ?? 'alone');
@@ -80,7 +98,7 @@ export default function DecisionView() {
 
     try {
       await setDecisionAndGeneratePlans(answers);
-      navigation.navigate('PlanPreview');
+      navigation.reset({ index: 1, routes: [{ name: 'Home' }, { name: 'PlanPreview' }] });
     } catch (error) {
       console.warn('Failed to generate recommendation:', error);
       setGenerationError('추천 계획을 만드는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
@@ -159,6 +177,20 @@ export default function DecisionView() {
           <Text style={styles.sectionTitle}>함께 보내나요?</Text>
           {renderChoices(SOCIAL_OPTIONS, socialMode, setSocialMode)}
         </View>
+
+        {calendarContext ? (
+          <View style={styles.calendarCard}>
+            <Text style={styles.calendarCardTitle}>Google Calendar 일정 요약</Text>
+            <Text style={styles.calendarCardBody}>
+              {calendarContext.planningSummary ?? '연동된 일정 요약이 아직 없습니다.'}
+            </Text>
+            {calendarContext.upcomingEvents.slice(0, 3).map((event) => (
+              <Text key={event.id} style={styles.calendarEventText}>
+                {formatCalendarEventPreview(event.start, event.isAllDay, event.title)}
+              </Text>
+            ))}
+          </View>
+        ) : null}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>꼭 해야 하는 일</Text>
@@ -251,6 +283,32 @@ const styles = StyleSheet.create({
   choiceLabel: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
   choiceLabelSelected: { color: colors.primaryAction },
   choiceDescription: { fontSize: 14, lineHeight: 20, color: colors.textSecondary },
+  calendarCard: {
+    backgroundColor: '#ECFDF3',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.14)',
+  },
+  calendarCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  calendarCardBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.textSecondary,
+  },
+  calendarEventText: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#166534',
+    fontWeight: '600',
+  },
   input: {
     width: '100%',
     paddingVertical: 18,

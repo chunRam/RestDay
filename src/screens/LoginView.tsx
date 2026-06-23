@@ -39,10 +39,10 @@ export default function LoginView() {
             <Text style={styles.logo}>RestDay</Text>
           </TouchableOpacity>
           <Text style={styles.title}>
-            나만의 완벽한{'\n'}휴일 계획
+            내가 정한 휴일을{'\n'}미리 준비하세요
           </Text>
           <Text style={styles.subtitle}>
-            구글 캘린더와 연동하여 다가오는 휴일을 파악하고,{'\n'}알차게 쉴 수 있도록 계획을 세워보세요.
+            쉬는 날을 직접 정하고, 상태를 점검하고,{'\n'}실행 가능한 하루 계획으로 이어가세요.
           </Text>
         </View>
 
@@ -54,6 +54,14 @@ export default function LoginView() {
             <Text style={styles.diagnosticText}>{diagnosticMessage}</Text>
           )}
           
+          <TouchableOpacity
+            style={styles.emailBtn}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Signup')}
+          >
+            <Text style={styles.emailBtnText}>이메일로 시작하기</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity 
             style={[styles.googleBtn, (!isReady || loading) && { opacity: 0.7 }]} 
             activeOpacity={0.8}
@@ -63,16 +71,8 @@ export default function LoginView() {
             {loading ? (
               <ActivityIndicator color="#000000" />
             ) : (
-              <Text style={styles.googleBtnText}>G  Google계정으로 시작하기</Text>
+              <Text style={styles.googleBtnText}>Google 계정으로 로그인</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.emailBtn}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('Signup')}
-          >
-            <Text style={styles.emailBtnText}>이메일로 회원가입</Text>
           </TouchableOpacity>
           
           <Text style={styles.termsText}>
